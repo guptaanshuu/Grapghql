@@ -1,0 +1,20 @@
+type Query {
+  getFuels: GetFuelsResult
+}
+
+type Subscription {
+  onFuelPriceUpdate: FuelPriceUpdate
+}
+
+type GetFuelsResult {
+  fuels: [Fuel]
+}
+
+type Fuel {
+  id: ID!
+  name: String
+}
+
+type FuelPriceUpdate {
+  timestamp: String
+}

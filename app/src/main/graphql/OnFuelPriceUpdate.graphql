@@ -1,0 +1,5 @@
+subscription OnFuelPriceUpdate {
+    onFuelPriceUpdate {
+        timestamp
+    }
+}
