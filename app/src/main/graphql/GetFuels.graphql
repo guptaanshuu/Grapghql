@@ -1,8 +1,5 @@
 query ListFuels {
     getFuels {
-        fuels {
-            id
-            name
-        }
+        fuels { id name }
     }
 }

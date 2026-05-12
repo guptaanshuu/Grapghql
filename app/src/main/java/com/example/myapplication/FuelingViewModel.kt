@@ -19,6 +19,13 @@ class FuelingViewModel  @Inject constructor(
         Timber.d("FuelingViewModel initialized")
         loadInitialFuelData()
         observeRealtimeUpdates()
+
+        viewModelScope.launch {
+            subscriptionManager.subscriptionEvents.collect { event ->
+                Timber.tag("FuelingViewModel").d("New event to process: $event")
+                // Parse the JSON and update your screen state here
+            }
+        }
     }
 
      fun loadInitialFuelData() {

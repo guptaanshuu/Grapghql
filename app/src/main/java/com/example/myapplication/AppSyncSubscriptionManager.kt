@@ -1,26 +1,37 @@
 package com.example.myapplication
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import okhttp3.logging.HttpLoggingInterceptor
 import timber.log.Timber
 import javax.inject.Inject
 
 class AppSyncSubscriptionManager @Inject constructor() {
-    private val client = OkHttpClient()
-
     private var webSocket: WebSocket? = null
 
+    private val _subscriptionEvents = MutableSharedFlow<String>(extraBufferCapacity = 10)
+    val subscriptionEvents = _subscriptionEvents.asSharedFlow()
+
     fun connect() {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
 
         val request = Request.Builder()
             .url(AppSyncConfig.realtimeEndpoint())
             .addHeader("Sec-WebSocket-Protocol", "graphql-ws")
             .build()
 
-        webSocket = client.newWebSocket(
+        webSocket = okHttpClient.newWebSocket(
             request,
             object : WebSocketListener() {
 
@@ -66,6 +77,9 @@ class AppSyncSubscriptionManager @Inject constructor() {
     }
 
     private fun sendConnectionInit(webSocket: WebSocket) {
+        val message = """{"type":"connection_init"}"""
+        webSocket.send(message)
+        Timber.tag("AppSync").d("Sent: connection_init")
     }
     private fun startSubscription(webSocket: WebSocket) {
 
@@ -91,8 +105,7 @@ class AppSyncSubscriptionManager @Inject constructor() {
 
         webSocket.send(payload)
 
-        Timber.tag("AppSync")
-            .d("Subscription started")
+        Timber.d("Subscription started")
     }
 
     private fun handleMessage(
@@ -116,7 +129,8 @@ class AppSyncSubscriptionManager @Inject constructor() {
 
             text.contains("data") -> {
                 Timber.tag("AppSync")
-                    .d("Realtime data received")
+                    .d("Realtime data received $text")
+                _subscriptionEvents.tryEmit(text)
             }
 
             text.contains("ka") -> {
